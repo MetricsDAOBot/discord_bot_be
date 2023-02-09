@@ -211,3 +211,8 @@ export const generateRandomNumberChar = (min: number, max: number): string => {
     }
     return numStr;
 }
+
+// check if the uuid is valid as sanitization
+export const checkIsValidUUID = (uuid: string) => {
+    return (uuid.match(/^[0-9A-F]{8}-[0-9A-F]{4}-[4][0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$/i)?.length ?? 0) > 0;
+}

@@ -5,6 +5,7 @@ import { Socket, Server } from 'socket.io';
 import cors from 'cors';import _ from 'lodash';
 import path from 'path';
 import dotenv from 'dotenv';
+import { assignGraderToRequest, getRegradeRequest, getRegradeRequestsForId, newRegradeRequest, updateRegradeRequestByGrader, updateRegradeRequestByUser, } from './src/Regrade';
 dotenv.config({ path: path.join(__dirname, '.env')});
 
 process.on('uncaughtException', function (err) {
@@ -41,6 +42,66 @@ let http = createServer(app);
 //api endpoints
 app.get('/', function(req, res) {
     res.send('Hello World');
+});
+
+//form endpoints
+app.get('/regrade_request/:uuid', async function(req, res) {
+    let uuid = req.params["uuid"];
+    console.log(uuid);
+    let requests = await getRegradeRequest(uuid);
+    return res.send(requests);
+});
+
+app.get('/regrade_requests/:discord_id', async function(req, res) {
+    //need to sanitize
+    let discordId = req.params["discord_id"];
+    let requests = await getRegradeRequestsForId(discordId);
+    return res.send(requests);
+});
+
+app.post('/regrade_request', async function(req, res) {
+    let { discord_id, discord_name }: { discord_id: string, discord_name: string} = req.body;
+    let uuid = await newRegradeRequest(discord_id, discord_name);
+    return res.send(uuid);
+});
+
+app.patch('/regrade_request', async function(req, res) {
+    let { submission, grader_feedback, expected_score, current_score, reason, uuid } = req.body;
+
+    let ret = await updateRegradeRequestByUser({
+        submission,
+        grader_feedback,
+        expected_score,
+        current_score,
+        reason,
+        uuid,
+    });
+
+    return res.send(ret);
+});
+
+app.patch('/assign_grader_to_request', async function(req, res) {
+    let { discord_id, discord_name, uuid } = req.body;
+    
+    let ret = await assignGraderToRequest({
+        discord_id,
+        discord_name,
+        uuid
+    });
+
+    return res.send(ret);
+});
+
+app.patch('/regrade_request_by_grader', async function(req, res) {
+    let { regraded_reason, regraded_score, uuid } = req.body;
+    
+    let ret = await updateRegradeRequestByGrader({
+        uuid,
+        regraded_reason,
+        regraded_score
+    });
+
+    return res.send(ret);
 });
 
 http.listen(port, () => {
