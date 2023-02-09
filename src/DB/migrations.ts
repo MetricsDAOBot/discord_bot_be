@@ -15,23 +15,61 @@ export default [
         query: `
             CREATE TABLE regrade_requests (
                 id serial PRIMARY KEY,
-                discord_id int not null,
-                dicord_name text not null,
+                discord_id text not null,
+                discord_name text not null,
                 created_at timestamp not null,
                 updated_at timestamp not null,
                 is_regrading boolean not null default false,
+                uuid text not null,
 
                 -- submission by user
                 submission text,
                 grader_feedback text,
                 expected_score smallint,
+                current_score smallint,
                 reason text,
 
                 -- submission by regrader
                 regraded_by text,
+                regraded_by_id text;
                 regraded_at timestamp,
                 regraded_score smallint,
-                regraded_reason text
+                regraded_reason text,
+
+                -- others
+                deleted_at timestamp
+            );`,
+        rollback_query: `DROP TABLE regrade_requests;`
+    },
+    {
+        id: 3,
+        query: `
+            CREATE TABLE golden_tickets (
+                id serial PRIMARY KEY,
+                discord_id text not null,
+                discord_name text not null,
+                created_at timestamp not null,
+                updated_at timestamp not null,
+                created_by_id text not null,
+                created_by text not null,
+                
+                -- spending
+                is_spent boolean not null default false,
+                spent_at timestamp,
+
+                -- others
+                deleted_at timestamp
+            );`,
+        rollback_query: `DROP TABLE regrade_requests;`
+    },
+    {
+        id: 4,
+        query: `
+            CREATE TABLE admins (
+                id serial PRIMARY KEY,
+                discord_id text not null,
+                added_by_id text not null,
+                added_by text not null
             );`,
         rollback_query: `DROP TABLE regrade_requests;`
     },

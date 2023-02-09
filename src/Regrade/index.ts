@@ -2,15 +2,28 @@ import DB from '../DB';
 import { randomUUID } from 'crypto';
 import { checkIsValidUUID, getInsertQuery, getUTCDatetime, } from '../../utils';
 import { AssignGraderToRegradeRequestParams, RegradeRequest, UpdateRegradeRequestByGraderParams, UpdateRegradeRequestByUserParams } from './types';
+import { getUserTickets } from '../GoldenTicket';
 
 export const newRegradeRequest = async(discordId: string, discordName: string) => {
     let db = new DB();
+
+    let tickets = await getUserTickets({ discord_id: discordId, unspent_only: true });
+    if(!tickets || tickets.length === 0) {
+        return "You're out of Golden Tickets";
+    }
+
+    let now = getUTCDatetime();
+    let updateGoldenTicketQuery = `update golden_tickets set is_spent = TRUE, spent_at = '${now}', updated_at = '${now}' where id = ${tickets[0].id};`;
+    let isSuccess = await db.executeQuery(updateGoldenTicketQuery);
+    console.log(updateGoldenTicketQuery);
+    if(!isSuccess) {
+        return "Error";
+    }
 
     let uuid = randomUUID();
     let table = 'regrade_requests';
     let columns = ['discord_id', 'discord_name', 'created_at', 'updated_at', 'uuid'];
     let values: any[][] = [];
-    let now = getUTCDatetime();
 
     values.push([discordId, discordName, now, now, uuid]);
 
@@ -33,7 +46,7 @@ export const getRegradeRequests = async(onlyActive = true) => {
     return regradeRequest ?? [];
 }
 
-export const getRegradeRequestsForId = async(discordId: string) => {
+export const getRegradeRequestsForUser = async(discordId: string) => {
     let db = new DB();
 
     let query = `select * from regrade_requests where deleted_at is null and discord_id = ${discordId}`;

@@ -5,7 +5,8 @@ import { Socket, Server } from 'socket.io';
 import cors from 'cors';import _ from 'lodash';
 import path from 'path';
 import dotenv from 'dotenv';
-import { assignGraderToRequest, getRegradeRequest, getRegradeRequestsForId, newRegradeRequest, updateRegradeRequestByGrader, updateRegradeRequestByUser, } from './src/Regrade';
+import { assignGraderToRequest, getRegradeRequest, getRegradeRequestsForUser, newRegradeRequest, updateRegradeRequestByGrader, updateRegradeRequestByUser, } from './src/Regrade';
+import { addTicket } from './src/GoldenTicket';
 dotenv.config({ path: path.join(__dirname, '.env')});
 
 process.on('uncaughtException', function (err) {
@@ -55,7 +56,7 @@ app.get('/regrade_request/:uuid', async function(req, res) {
 app.get('/regrade_requests/:discord_id', async function(req, res) {
     //need to sanitize
     let discordId = req.params["discord_id"];
-    let requests = await getRegradeRequestsForId(discordId);
+    let requests = await getRegradeRequestsForUser(discordId);
     return res.send(requests);
 });
 
@@ -99,6 +100,20 @@ app.patch('/regrade_request_by_grader', async function(req, res) {
         uuid,
         regraded_reason,
         regraded_score
+    });
+
+    return res.send(ret);
+});
+
+// tickets
+app.post('/add_ticket', async function(req, res) {
+    let { discord_id, discord_name, created_by_id, created_by } = req.body;
+    
+    let ret = await addTicket({
+        discord_id,
+        discord_name,
+        created_by_id,
+        created_by
     });
 
     return res.send(ret);

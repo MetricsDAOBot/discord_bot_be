@@ -4,6 +4,7 @@ import path from 'path';
 dotenv.config({ path: path.join(__dirname, '.env')});
 import axios, { AxiosRequestHeaders, AxiosRequestConfig, AxiosResponse } from "axios";
 import crypto from "crypto";
+import DB from './src/DB';
 
 export function sleep(ms: number) {
     return new Promise((resolve, reject) => {
@@ -215,4 +216,11 @@ export const generateRandomNumberChar = (min: number, max: number): string => {
 // check if the uuid is valid as sanitization
 export const checkIsValidUUID = (uuid: string) => {
     return (uuid.match(/^[0-9A-F]{8}-[0-9A-F]{4}-[4][0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$/i)?.length ?? 0) > 0;
+}
+
+export const isCurrentUserAdmin = async(discord_id: string) => {
+    let db = new DB();
+    let query = `select count(*) as admin_count from admins where discord_id = '${discord_id}'`;
+    let result = await db.executeQueryForSingleResult<{ admin_count: number }>(query);
+    return result !== undefined && result.admin_count > 0;
 }
