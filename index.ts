@@ -48,7 +48,6 @@ app.get('/', function(req, res) {
 //form endpoints
 app.get('/regrade_request/:uuid', async function(req, res) {
     let uuid = req.params["uuid"];
-    console.log(uuid);
     let requests = await getRegradeRequest(uuid);
     return res.send(requests);
 });

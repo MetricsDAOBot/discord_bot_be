@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto';
 import { checkIsValidUUID, getInsertQuery, getUTCDatetime, } from '../../utils';
 import { AssignGraderToRegradeRequestParams, RegradeRequest, UpdateRegradeRequestByGraderParams, UpdateRegradeRequestByUserParams } from './types';
 import { getUserTickets } from '../GoldenTicket';
+import moment from 'moment';
 
 export const newRegradeRequest = async(discordId: string, discordName: string) => {
     let db = new DB();
@@ -15,7 +16,6 @@ export const newRegradeRequest = async(discordId: string, discordName: string) =
     let now = getUTCDatetime();
     let updateGoldenTicketQuery = `update golden_tickets set is_spent = TRUE, spent_at = '${now}', updated_at = '${now}' where id = ${tickets[0].id};`;
     let isSuccess = await db.executeQuery(updateGoldenTicketQuery);
-    console.log(updateGoldenTicketQuery);
     if(!isSuccess) {
         return "Error";
     }
@@ -79,12 +79,23 @@ export const updateRegradeRequestByUser = async(updateRequest: UpdateRegradeRequ
         reason
     } = updateRequest;
 
+    let requests = await getRegradeRequest(uuid);
+    if(requests.length === 0) {
+        return "Unable to find request";
+    }
+
+    if(!moment(requests[0].created_at).isSame(requests[0].updated_at)) {
+        return "Unable to update request";
+    }
+
+    let now = getUTCDatetime();
     let query = `update regrade_requests 
                  set submission = '${submission}', 
                      grader_feedback = '${grader_feedback}', 
                      expected_score = ${expected_score}, 
                      current_score = ${current_score}, 
-                     reason = '${reason}' 
+                     reason = '${reason}',
+                     updated_at = '${now}'
                  where uuid = '${uuid}'`;
 
     let isSuccess = await db.executeQuery(query);
