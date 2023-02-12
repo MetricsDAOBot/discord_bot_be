@@ -1,9 +1,10 @@
 import DB from '../DB';
 import { randomUUID } from 'crypto';
-import { checkIsValidUUID, getInsertQuery, getUTCDatetime, } from '../../utils';
-import { AssignGraderToRegradeRequestParams, RegradeRequest, UpdateRegradeRequestByGraderParams, UpdateRegradeRequestByUserParams } from './types';
-import { getUserTickets } from '../GoldenTicket';
+import { checkIsValidUUID, getInsertQuery, getUTCDatetime, isCurrentUserAdmin, } from '../../utils';
+import { ApproveRegradeRequestByAdminParams, AssignGraderToRegradeRequestParams, RegradeRequest, UpdateRegradeRequestByGraderParams, UpdateRegradeRequestByUserParams } from './types';
+import { addTicket, getUserTickets } from '../GoldenTicket';
 import moment from 'moment';
+import { Admin } from '../Admin/types';
 
 export const newRegradeRequest = async(discordId: string, discordName: string) => {
     let db = new DB();
@@ -171,4 +172,48 @@ export const updateRegradeRequestByGrader = async(updateRequest: UpdateRegradeRe
     }
 
     return "Updated";
+}
+
+export const approveRegradeRequest = async(approveRequest: ApproveRegradeRequestByAdminParams) => {
+    let db = new DB();
+
+    let {
+        uuid,
+
+        discord_id,
+        discord_name,
+    } = approveRequest;
+
+    let isAdmin = await isCurrentUserAdmin(discord_id);
+    if(!isAdmin) {
+        return "Unauthorized";
+    }
+
+    let regradeRequests = await getRegradeRequest(uuid);
+    if(regradeRequests.length === 0) {
+        return "Unable to find request";
+    }
+
+    let now = getUTCDatetime();
+
+    let query = `update regrade_requests 
+                 set approved_by = '${discord_name}', 
+                     approved_by_id = '${discord_id}',
+                     approved_at = '${now}'
+                 where uuid = '${uuid}'`;
+
+    let isSuccess = await db.executeQuery(query);
+    if(!isSuccess) {
+        return "Error";
+    }
+
+    await addTicket({
+        discord_id: regradeRequests[0].discord_id, // regrade request user
+        discord_name: regradeRequests[0].discord_name,
+        created_by: discord_id, // admin
+        created_by_id: discord_name,
+        remark: `Reviewed request ${uuid}`,
+    });
+
+    return "Approved";
 }

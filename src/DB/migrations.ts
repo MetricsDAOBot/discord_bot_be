@@ -31,10 +31,15 @@ export default [
 
                 -- submission by regrader
                 regraded_by text,
-                regraded_by_id text;
+                regraded_by_id text,
                 regraded_at timestamp,
                 regraded_score smallint,
                 regraded_reason text,
+
+                --approvals
+                approved_by text,
+                approved_by_id text,
+                approved_at timestamp,
 
                 -- others
                 deleted_at timestamp
@@ -52,6 +57,7 @@ export default [
                 updated_at timestamp not null,
                 created_by_id text not null,
                 created_by text not null,
+                remark text not null,
                 
                 -- spending
                 is_spent boolean not null default false,

@@ -16,6 +16,7 @@ export type AddTicketParams = {
     discord_name: string;
     created_by_id: string;
     created_by: string;
+    remark?: string;
 }
 
 export type GetTicketParams = {

@@ -1,6 +1,6 @@
 export type RegradeRequest = {
     id: number;
-    discord_id: number;
+    discord_id: string;
     discord_name: string;
     created_at: string;
     updated_at: string;
@@ -44,4 +44,11 @@ export type UpdateRegradeRequestByGraderParams = {
 
     regraded_score: number | null;
     regraded_reason: string | null;
+}
+
+export type ApproveRegradeRequestByAdminParams = {
+    uuid: string;
+
+    discord_id: string;
+    discord_name: string;
 }
