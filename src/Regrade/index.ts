@@ -145,7 +145,7 @@ export const assignGraderToRequest = async(updateRequest: AssignGraderToRegradeR
         return currentRequests[0];
     }
 
-    let requests = await getRegradeRequests(true, /* discord_id */);
+    let requests = await getRegradeRequests(true, discord_id);
     if(requests.length === 0) {
         return "No regrade requests found!";
     }
