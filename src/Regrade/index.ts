@@ -1,6 +1,6 @@
 import DB from '../DB';
 import { randomUUID } from 'crypto';
-import { checkIsValidUUID, getInsertQuery, getUTCDatetime, isCurrentUserAdmin, } from '../../utils';
+import { isValidUUID, getInsertQuery, getUTCDatetime, isCurrentUserAdmin, } from '../../utils';
 import { ApproveRegradeRequestByAdminParams, AssignGraderToRegradeRequestParams, RegradeRequest, UpdateRegradeRequestByGraderParams, UpdateRegradeRequestByUserParams } from './types';
 import { addTicket, getUserTickets } from '../GoldenTicket';
 import moment from 'moment';
@@ -35,7 +35,7 @@ export const newRegradeRequest = async(discordId: string, discordName: string) =
     return uuid;
 }
 
-export const getRegradeRequests = async(onlyActive = true) => {
+export const getRegradeRequests = async(onlyActive = true, excludeId = "") => {
     let db = new DB();
 
     let query = `select * from regrade_requests where deleted_at is null`;
@@ -43,6 +43,13 @@ export const getRegradeRequests = async(onlyActive = true) => {
     if(onlyActive) {
         query += ' and regraded_at is null and is_regrading = False';
     }
+
+    if(excludeId) {
+        query += ` and discord_id <> '${excludeId}'`;
+
+    }
+
+    query += ' order by created_at;';
     let regradeRequest = await db.executeQueryForResults<RegradeRequest>(query);
     return regradeRequest ?? [];
 }
@@ -58,7 +65,7 @@ export const getRegradeRequestsForUser = async(discordId: string) => {
 export const getRegradeRequest = async(uuid: string) => {
     let db = new DB();
 
-    if(!checkIsValidUUID(uuid)) {
+    if(!isValidUUID(uuid)) {
         return [];
     }
 
@@ -111,24 +118,29 @@ export const assignGraderToRequest = async(updateRequest: AssignGraderToRegradeR
     let db = new DB();
 
     let {
-        uuid,
+        // uuid,
 
         discord_id,
         discord_name
     } = updateRequest;
 
+    let requests = await getRegradeRequests(true, discord_id);
+    if(requests.length === 0) {
+        return "No regrade requests found!";
+    }
+
     let query = `update regrade_requests 
                  set discord_id = '${discord_id}', 
                      discord_name = '${discord_name}',
                      is_regrading = True
-                 where uuid = '${uuid}'`;
+                 where uuid = '${requests[0].uuid}'`;
 
     let isSuccess = await db.executeQuery(query);
     if(!isSuccess) {
         return "Error";
     }
 
-    return "Updated";
+    return requests[0].uuid;
 }
 
 export const unassignGraderForRequest = async(uuid: string) => {

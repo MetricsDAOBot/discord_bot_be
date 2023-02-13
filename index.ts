@@ -5,7 +5,7 @@ import { Socket, Server } from 'socket.io';
 import cors from 'cors';import _ from 'lodash';
 import path from 'path';
 import dotenv from 'dotenv';
-import { assignGraderToRequest, getRegradeRequest, getRegradeRequestsForUser, newRegradeRequest, updateRegradeRequestByGrader, updateRegradeRequestByUser, } from './src/Regrade';
+import { assignGraderToRequest, getRegradeRequest, getRegradeRequests, getRegradeRequestsForUser, newRegradeRequest, updateRegradeRequestByGrader, updateRegradeRequestByUser, } from './src/Regrade';
 import { addTicket } from './src/GoldenTicket';
 import { addAdmin, removeAdmin } from './src/Admin';
 dotenv.config({ path: path.join(__dirname, '.env')});
@@ -47,6 +47,11 @@ app.get('/', function(req, res) {
 });
 
 //form endpoints
+app.get('/regrade_requests', async function(req, res) {
+    let requests = await getRegradeRequests();
+    return res.send(requests);
+});
+
 app.get('/regrade_request/:uuid', async function(req, res) {
     let uuid = req.params["uuid"];
     let requests = await getRegradeRequest(uuid);
@@ -82,12 +87,11 @@ app.patch('/regrade_request', async function(req, res) {
 });
 
 app.patch('/assign_grader_to_request', async function(req, res) {
-    let { discord_id, discord_name, uuid } = req.body;
+    let { discord_id, discord_name } = req.body;
     
     let ret = await assignGraderToRequest({
         discord_id,
         discord_name,
-        uuid
     });
 
     return res.send(ret);

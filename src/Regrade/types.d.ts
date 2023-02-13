@@ -33,9 +33,9 @@ export type UpdateRegradeRequestByUserParams = {
 }
 
 export type AssignGraderToRegradeRequestParams = {
-    uuid: string;
+    // uuid: string;
 
-    discord_id: number;
+    discord_id: string;
     discord_name: string;
 }
 
