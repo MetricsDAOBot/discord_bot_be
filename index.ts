@@ -107,13 +107,15 @@ app.patch('/regrade_request_by_grader', async function(req, res) {
 
 // tickets
 app.post('/add_ticket', async function(req, res) {
-    let { discord_id, discord_name, created_by_id, created_by } = req.body;
+    let { discord_id, discord_name, created_by_id, created_by, number_of_tickets, remark } = req.body;
     
     let ret = await addTicket({
         discord_id,
         discord_name,
         created_by_id,
-        created_by
+        created_by,
+        number_of_tickets,
+        remark
     });
 
     return res.send(ret);

@@ -2,7 +2,7 @@ import { getInsertQuery, getUTCDatetime, isCurrentUserAdmin } from '../../utils'
 import DB from '../DB';
 import { AddTicketParams, GetTicketParams, GoldenTicket } from './types';
 
-export const addTicket = async({ discord_id, discord_name, created_by_id, created_by, remark }: AddTicketParams) => {
+export const addTicket = async({ discord_id, discord_name, created_by_id, created_by, remark, number_of_tickets }: AddTicketParams) => {
     let isAdmin = await isCurrentUserAdmin(created_by_id);
     if(!isAdmin) {
         return "Unauthorized!";
@@ -15,7 +15,11 @@ export const addTicket = async({ discord_id, discord_name, created_by_id, create
     let columns = ['discord_id', 'discord_name', 'created_at', 'updated_at', 'created_by', 'created_by_id', 'remark'];
     let values: any[][] = [];
 
-    values.push([discord_id, discord_name, now, now, created_by, created_by_id, remark ?? ""]);
+    number_of_tickets = number_of_tickets ?? 1;
+
+    for(let i = 0; i < number_of_tickets; i++) {
+        values.push([discord_id, discord_name, now, now, created_by, created_by_id, remark ?? ""]);
+    }
 
     let query = getInsertQuery(columns, values, table);
     query = `${query.replace(';', '')} returning id;`;

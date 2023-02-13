@@ -17,6 +17,7 @@ export type AddTicketParams = {
     created_by_id: string;
     created_by: string;
     remark?: string;
+    number_of_tickets?: number;
 }
 
 export type GetTicketParams = {
