@@ -12,9 +12,9 @@ export const seedAdmins = async() => {
         return;
     }
     let now = getUTCDatetime();
-    let columns = ['discord_id', 'added_by_id', 'added_at'];
+    let columns = ['discord_id', 'added_by', 'added_by_id', 'added_at'];
     let values = [
-        ['299884555211636736', '1', now],
+        ['299884555211636736', 'Kida', '1', now],
     ];
 
     let query = getInsertQuery(columns, values, table);

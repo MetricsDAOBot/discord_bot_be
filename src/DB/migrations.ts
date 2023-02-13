@@ -66,7 +66,7 @@ export default [
                 -- others
                 deleted_at timestamp
             );`,
-        rollback_query: `DROP TABLE regrade_requests;`
+        rollback_query: `DROP TABLE golden_tickets;`
     },
     {
         id: 4,
@@ -75,8 +75,9 @@ export default [
                 id serial PRIMARY KEY,
                 discord_id text not null,
                 added_by_id text not null,
-                added_by text not null
+                added_by text not null,
+                added_at timestamp not null
             );`,
-        rollback_query: `DROP TABLE regrade_requests;`
+        rollback_query: `DROP TABLE admins;`
     },
 ];

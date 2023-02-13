@@ -7,6 +7,7 @@ import path from 'path';
 import dotenv from 'dotenv';
 import { assignGraderToRequest, getRegradeRequest, getRegradeRequestsForUser, newRegradeRequest, updateRegradeRequestByGrader, updateRegradeRequestByUser, } from './src/Regrade';
 import { addTicket } from './src/GoldenTicket';
+import { addAdmin, removeAdmin } from './src/Admin';
 dotenv.config({ path: path.join(__dirname, '.env')});
 
 process.on('uncaughtException', function (err) {
@@ -113,6 +114,32 @@ app.post('/add_ticket', async function(req, res) {
         discord_name,
         created_by_id,
         created_by
+    });
+
+    return res.send(ret);
+});
+
+// admins
+app.post('/add_admin', async function(req, res) {
+    let { discord_id, discord_name, added_by, added_by_id } = req.body;
+
+    let ret = await addAdmin({
+        discord_id,
+        discord_name,
+        added_by,
+        added_by_id
+    });
+
+    return res.send(ret);
+});
+
+app.post('/remove_admin', async function(req, res) {
+    let { discord_id, discord_name, removed_by_id } = req.body;
+    
+    let ret = await removeAdmin({
+        discord_id,
+        discord_name,
+        removed_by_id,
     });
 
     return res.send(ret);

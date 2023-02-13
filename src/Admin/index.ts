@@ -1,20 +1,25 @@
 import DB from '../DB';
 import { AddAdminParams, RemoveAdminParams } from './types';
-import { getInsertQuery, isCurrentUserAdmin } from '../../utils';
+import { getInsertQuery, getUTCDatetime, isCurrentUserAdmin } from '../../utils';
 
-export const addAdmin = async({ discord_id, added_by_id, added_by }: AddAdminParams) => {
+export const addAdmin = async({ discord_id, discord_name, added_by_id, added_by }: AddAdminParams) => {
     let isAdmin = await isCurrentUserAdmin(added_by_id);
     if(!isAdmin) {
         return "Unauthorized!";
     }
+    let isNewUserAdmin = await isCurrentUserAdmin(discord_id);
+    if(isNewUserAdmin) {
+        return "User is already an admin!";
+    }
 
     let db = new DB();
 
+    let now = getUTCDatetime();
     let table = 'admins';
-    let columns = ['discord_id', 'added_by_id', 'added_by'];
+    let columns = ['discord_id', 'added_by_id', 'added_by', 'added_at'];
     let values: any[][] = [];
 
-    values.push([discord_id, added_by_id, added_by]);
+    values.push([discord_id, added_by_id, added_by, now]);
 
     let query = getInsertQuery(columns, values, table);
     query = `${query.replace(';', '')} returning id;`;
@@ -25,11 +30,11 @@ export const addAdmin = async({ discord_id, added_by_id, added_by }: AddAdminPar
         return "Error occurred";
     }
 
-    return "Success";
+    return `Added ${discord_name} as admin`;
 }
 
-export const removeAdmin = async({ discord_id, remove_by_id }: RemoveAdminParams) => {
-    let isAdmin = await isCurrentUserAdmin(remove_by_id);
+export const removeAdmin = async({ discord_id, discord_name, removed_by_id }: RemoveAdminParams) => {
+    let isAdmin = await isCurrentUserAdmin(removed_by_id);
     if(!isAdmin) {
         return "Unauthorized!";
     }
@@ -42,5 +47,5 @@ export const removeAdmin = async({ discord_id, remove_by_id }: RemoveAdminParams
         return "Error occurred";
     }
 
-    return "Success";
+    return `Removed ${discord_name}'s admin privileges.`;
 }
