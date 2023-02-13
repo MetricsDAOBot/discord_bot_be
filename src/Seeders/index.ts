@@ -15,6 +15,7 @@ export const seedAdmins = async() => {
     let columns = ['discord_id', 'added_by', 'added_by_id', 'added_at'];
     let values = [
         ['299884555211636736', 'Kida', '1', now],
+        ['828115529394815037', 'GJ', '1', now],
     ];
 
     let query = getInsertQuery(columns, values, table);

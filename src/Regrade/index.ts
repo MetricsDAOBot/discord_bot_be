@@ -1,15 +1,15 @@
 import DB from '../DB';
 import { randomUUID } from 'crypto';
 import { isValidUUID, getInsertQuery, getUTCDatetime, isCurrentUserAdmin, } from '../../utils';
-import { ApproveRegradeRequestByAdminParams, AssignGraderToRegradeRequestParams, RegradeRequest, UpdateRegradeRequestByGraderParams, UpdateRegradeRequestByUserParams } from './types';
+import { AddRegradeRequestByUserParams, ApproveRegradeRequestByAdminParams, AssignGraderToRegradeRequestParams, PendingApprovalsParams, RegradeRequest, UpdateRegradeRequestByGraderParams, UpdateRegradeRequestByUserParams } from './types';
 import { addTicket, getUserTickets } from '../GoldenTicket';
 import moment from 'moment';
-import { Admin } from '../Admin/types';
 
-export const newRegradeRequest = async(discordId: string, discordName: string) => {
+export const newRegradeRequest = async(addRequest: AddRegradeRequestByUserParams) => {
     let db = new DB();
 
-    let tickets = await getUserTickets({ discord_id: discordId, unspent_only: true });
+    let { discord_id, discord_name, submission, grader_feedback, expected_score, current_score, reason } = addRequest;
+    let tickets = await getUserTickets({ discord_id, unspent_only: true });
     if(!tickets || tickets.length === 0) {
         return "You're out of Golden Tickets";
     }
@@ -23,10 +23,10 @@ export const newRegradeRequest = async(discordId: string, discordName: string) =
 
     let uuid = randomUUID();
     let table = 'regrade_requests';
-    let columns = ['discord_id', 'discord_name', 'created_at', 'updated_at', 'uuid'];
+    let columns = ['discord_id', 'discord_name', 'created_at', 'updated_at', 'uuid', 'submission', 'grader_feedback', 'expected_score', 'current_score', 'reason'];
     let values: any[][] = [];
 
-    values.push([discordId, discordName, now, now, uuid]);
+    values.push([discord_id, discord_name, now, now, uuid, submission, grader_feedback, expected_score, current_score, reason]);
 
     let query = getInsertQuery(columns, values, table);
     query = `${query.replace(';', '')} returning id;`;
@@ -48,6 +48,22 @@ export const getRegradeRequests = async(onlyActive = true, excludeId = "") => {
         query += ` and discord_id <> '${excludeId}'`;
 
     }
+
+    query += ' order by created_at;';
+    let regradeRequest = await db.executeQueryForResults<RegradeRequest>(query);
+    return regradeRequest ?? [];
+}
+
+export const getCurrentRequestForGrader = async(discord_id: string) => {
+    let db = new DB();
+
+    let query = `select * from regrade_requests 
+                        where deleted_at is null
+                        and regraded_at is null 
+                        and is_regrading = true
+                        and regraded_by_id = '${discord_id}'
+                        and regraded_score is null
+                        and regraded_reason is null`;
 
     query += ' order by created_at;';
     let regradeRequest = await db.executeQueryForResults<RegradeRequest>(query);
@@ -124,15 +140,22 @@ export const assignGraderToRequest = async(updateRequest: AssignGraderToRegradeR
         discord_name
     } = updateRequest;
 
-    let requests = await getRegradeRequests(true, discord_id);
+    let currentRequests = await getCurrentRequestForGrader(discord_id);
+    if(currentRequests.length > 0) {
+        return currentRequests[0];
+    }
+
+    let requests = await getRegradeRequests(true, /* discord_id */);
     if(requests.length === 0) {
         return "No regrade requests found!";
     }
 
+    let now = getUTCDatetime();
     let query = `update regrade_requests 
-                 set discord_id = '${discord_id}', 
-                     discord_name = '${discord_name}',
-                     is_regrading = True
+                 set regraded_by_id = '${discord_id}', 
+                     regraded_by = '${discord_name}',
+                     is_regrading = True,
+                     updated_at = '${now}'
                  where uuid = '${requests[0].uuid}'`;
 
     let isSuccess = await db.executeQuery(query);
@@ -140,7 +163,7 @@ export const assignGraderToRequest = async(updateRequest: AssignGraderToRegradeR
         return "Error";
     }
 
-    return requests[0].uuid;
+    return requests[0];
 }
 
 export const unassignGraderForRequest = async(uuid: string) => {
@@ -170,12 +193,22 @@ export const updateRegradeRequestByGrader = async(updateRequest: UpdateRegradeRe
         regraded_reason,
     } = updateRequest;
 
+    let regradeRequests = await getRegradeRequest(uuid);
+    if(regradeRequests.length === 0) {
+        return "Unable to find request";
+    }
+
+    if(regradeRequests[0].regraded_score) {
+        return "Already regraded";
+    }
+
     let now = getUTCDatetime();
 
     let query = `update regrade_requests 
                  set regraded_score = '${regraded_score}', 
                      regraded_reason = '${regraded_reason}',
-                     regraded_at = '${now}'
+                     regraded_at = '${now}',
+                     is_regrading = false
                  where uuid = '${uuid}'`;
 
     let isSuccess = await db.executeQuery(query);
@@ -206,6 +239,10 @@ export const approveRegradeRequest = async(approveRequest: ApproveRegradeRequest
         return "Unable to find request";
     }
 
+    if(regradeRequests[0].approved_at) {
+        return "Already approved";
+    }
+
     let now = getUTCDatetime();
 
     let query = `update regrade_requests 
@@ -220,12 +257,31 @@ export const approveRegradeRequest = async(approveRequest: ApproveRegradeRequest
     }
 
     await addTicket({
-        discord_id: regradeRequests[0].discord_id, // regrade request user
-        discord_name: regradeRequests[0].discord_name,
-        created_by: discord_id, // admin
-        created_by_id: discord_name,
+        discord_id: regradeRequests[0].regraded_by_id!, // regrade request user
+        discord_name: regradeRequests[0].regraded_by!,
+        created_by: discord_name, // admin
+        created_by_id: discord_id,
         remark: `Reviewed request ${uuid}`,
     });
 
     return "Approved";
+}
+
+export const getPendingApprovals = async({ discord_id, page}: PendingApprovalsParams) => {
+    let db = new DB();
+    let isAdmin = await isCurrentUserAdmin(discord_id);
+    if(!isAdmin) {
+        return "Unauthorized";
+    }
+
+    let query = `select * from regrade_requests 
+                            where deleted_at is null
+                            and is_regrading = false
+                            and regraded_score is not null
+                            and approved_by_id is null`;
+
+    // limit 2 to check if there's another approval after this
+    query += ` order by created_at limit 2 offset ${page};`;
+    let regradeRequest = await db.executeQueryForResults<RegradeRequest>(query);
+    return regradeRequest ?? [];
 }

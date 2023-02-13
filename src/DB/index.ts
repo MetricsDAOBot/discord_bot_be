@@ -150,7 +150,7 @@ export default class DB {
         }
 
         catch (e){
-            // console.log(e);
+            console.log(e);
         }
 
         finally {
