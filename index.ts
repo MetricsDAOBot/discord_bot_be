@@ -61,10 +61,11 @@ app.get('/regrade_request/:uuid', async function(req, res) {
     return res.send(requests);
 });
 
-app.get('/regrade_requests/:discord_id', async function(req, res) {
+app.get('/regrade_requests/:discord_id/:page', async function(req, res) {
     //need to sanitize
     let discordId: string = req.params["discord_id"];
-    let requests = await getRegradeRequestsForUser(discordId);
+    let page: number = parseInt(req.params["page"]);
+    let requests = await getRegradeRequestsForUser(discordId, page);
     return res.send(requests);
 });
 

@@ -70,10 +70,14 @@ export const getCurrentRequestForGrader = async(discord_id: string) => {
     return regradeRequest ?? [];
 }
 
-export const getRegradeRequestsForUser = async(discordId: string) => {
+export const getRegradeRequestsForUser = async(discordId: string, page: number) => {
     let db = new DB();
 
-    let query = `select * from regrade_requests where deleted_at is null and discord_id = ${discordId}`;
+    let query = `select * from regrade_requests 
+                        where deleted_at is null 
+                            and discord_id = '${discordId}'
+                        order by created_at
+                        limit 2 offset ${page}`;
     let regradeRequest = await db.executeQueryForResults<RegradeRequest>(query);
     return regradeRequest ?? [];
 }
