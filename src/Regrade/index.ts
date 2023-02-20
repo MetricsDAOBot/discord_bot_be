@@ -1,7 +1,7 @@
 import DB from '../DB';
 import { randomUUID } from 'crypto';
 import { isValidUUID, getInsertQuery, getUTCDatetime, isCurrentUserAdmin, } from '../../utils';
-import { AddRegradeRequestByUserParams, ApproveRegradeRequestByAdminParams, AssignGraderToRegradeRequestParams, PendingApprovalsParams, RegradeRequest, UpdateRegradeRequestByGraderParams, UpdateRegradeRequestByUserParams } from './types';
+import { AddRegradeRequestByUserParams, ApproveRegradeRequestByAdminParams, AssignGraderToRegradeRequestParams, PendingApprovalsParams, RegradeRequest, RegradeRequestCSV, UpdateRegradeRequestByGraderParams, UpdateRegradeRequestByUserParams } from './types';
 import { addTicket, getUserTickets } from '../GoldenTicket';
 import moment from 'moment';
 
@@ -33,6 +33,18 @@ export const newRegradeRequest = async(addRequest: AddRegradeRequestByUserParams
 
     await db.executeQueryForSingleResult(query);
     return uuid;
+}
+
+export const getRegradeRequestsCSV = async(discord_id: string) => {
+    let db = new DB();
+
+    let isAdmin = await isCurrentUserAdmin(discord_id);
+
+    let query = `select *, ${isAdmin? 'true' : 'false'} as is_admin from regrade_requests where deleted_at is null`;
+
+    query += ' order by created_at;';
+    let regradeRequest = await db.executeQueryForResults<RegradeRequestCSV>(query);
+    return regradeRequest ?? [];
 }
 
 export const getRegradeRequests = async(onlyActive = true, excludeId = "") => {
@@ -70,14 +82,17 @@ export const getCurrentRequestForGrader = async(discord_id: string) => {
     return regradeRequest ?? [];
 }
 
-export const getRegradeRequestsForUser = async(discordId: string, page: number) => {
+export const getRegradeRequestsForUser = async(discordId: string, page: number = -1) => {
     let db = new DB();
 
     let query = `select * from regrade_requests 
                         where deleted_at is null 
                             and discord_id = '${discordId}'
-                        order by created_at
-                        limit 2 offset ${page}`;
+                        order by created_at`;
+
+    if(page > -1) {
+        query += ` limit 2 offset ${page}`;
+    }
     let regradeRequest = await db.executeQueryForResults<RegradeRequest>(query);
     return regradeRequest ?? [];
 }

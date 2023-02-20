@@ -5,7 +5,7 @@ import { Socket, Server } from 'socket.io';
 import cors from 'cors';import _ from 'lodash';
 import path from 'path';
 import dotenv from 'dotenv';
-import { approveRegradeRequest, assignGraderToRequest, getPendingApprovals, getRegradeRequest, getRegradeRequests, getRegradeRequestsForUser, newRegradeRequest, updateRegradeRequestByGrader, updateRegradeRequestByUser, } from './src/Regrade';
+import { approveRegradeRequest, assignGraderToRequest, getPendingApprovals, getRegradeRequest, getRegradeRequests, getRegradeRequestsCSV, getRegradeRequestsForUser, newRegradeRequest, updateRegradeRequestByGrader, updateRegradeRequestByUser, } from './src/Regrade';
 import { addTicket, getUserTickets } from './src/GoldenTicket';
 import { addAdmin, removeAdmin } from './src/Admin';
 import { AddAdminParams } from './src/Admin/types';
@@ -50,14 +50,22 @@ app.get('/', function(req, res) {
 });
 
 //form endpoints
-app.get('/regrade_requests', async function(req, res) {
-    let requests = await getRegradeRequests();
+app.post('/regrade_requests', async function(req, res) {
+    let { discord_id }: { discord_id: string } = req.body;
+    let requests = await getRegradeRequestsCSV(discord_id);
     return res.send(requests);
 });
 
 app.get('/regrade_request/:uuid', async function(req, res) {
     let uuid: string = req.params["uuid"];
     let requests = await getRegradeRequest(uuid);
+    return res.send(requests);
+});
+
+app.get('/regrade_requests/:discord_id', async function(req, res) {
+    //need to sanitize
+    let discordId: string = req.params["discord_id"];
+    let requests = await getRegradeRequestsForUser(discordId);
     return res.send(requests);
 });
 

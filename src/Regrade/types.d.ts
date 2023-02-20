@@ -26,6 +26,8 @@ export type RegradeRequest = {
     deleted_at: string | null;
 }
 
+export type RegradeRequestCSV = RegradeRequest & { is_admin: boolean }
+
 export type AddRegradeRequestByUserParams = {
     discord_id: string;
     discord_name: string;
