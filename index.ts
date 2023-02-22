@@ -56,6 +56,9 @@ app.post('/regrade_requests', async function(req, res) {
     return res.send(requests);
 });
 
+/**
+ * Currently unused
+ */
 app.get('/regrade_request/:uuid', async function(req, res) {
     let uuid: string = req.params["uuid"];
     let requests = await getRegradeRequest(uuid);
@@ -83,6 +86,7 @@ app.get('/regrade_requests/:discord_id/:page', async function(req, res) {
     let uuid = await newRegradeRequest(discord_id, discord_name);
     return res.send(uuid);
 }); */
+
 app.post('/regrade_request', async function(req, res) {
     let { discord_id, discord_name, submission, grader_feedback, expected_score, current_score, reason }: AddRegradeRequestByUserParams = req.body;
     let uuid = await newRegradeRequest({ discord_id, discord_name, submission, grader_feedback, expected_score, current_score, reason });

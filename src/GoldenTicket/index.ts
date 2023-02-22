@@ -2,6 +2,13 @@ import { getInsertQuery, getUTCDatetime, isCurrentUserAdmin } from '../../utils'
 import DB from '../DB';
 import { AddTicketParams, GetTicketParams, GoldenTicket } from './types';
 
+/**
+ * Admin Function.
+ * Adds tickets manually.
+ * 
+ * @param AddTicketParams 
+ * @returns string
+ */
 export const addTicket = async({ discord_id, discord_name, created_by_id, created_by, remark, number_of_tickets }: AddTicketParams) => {
     let isAdmin = await isCurrentUserAdmin(created_by_id);
     if(!isAdmin) {
@@ -33,6 +40,11 @@ export const addTicket = async({ discord_id, discord_name, created_by_id, create
     return "Success";
 }
 
+/**
+ * 
+ * @param GetTicketParams 
+ * @returns GoldenTicket[]
+ */
 export const getUserTickets = async({ discord_id, unspent_only }: GetTicketParams) => {
     let db = new DB();
     let query = `select * from golden_tickets where discord_id = '${discord_id}' and deleted_at is null`;

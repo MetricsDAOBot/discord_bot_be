@@ -5,6 +5,13 @@ import { AddRegradeRequestByUserParams, ApproveRegradeRequestByAdminParams, Assi
 import { addTicket, getUserTickets } from '../GoldenTicket';
 import moment from 'moment';
 
+/**
+ * Adds a new regrade request. Will check if user has tickets before opening a new ticket.
+ * Used in /new_regrade_request
+ * 
+ * @param addRequest 
+ * @returns string
+ */
 export const newRegradeRequest = async(addRequest: AddRegradeRequestByUserParams) => {
     let db = new DB();
 
@@ -21,6 +28,8 @@ export const newRegradeRequest = async(addRequest: AddRegradeRequestByUserParams
         return "Error";
     }
 
+    // uuid is to fetch requests, id is not used to prevent people from guessing their request numbers
+    // however this is unused and the idea is scrapped, uuid is kept so that it can be used if needed in the future
     let uuid = randomUUID();
     let table = 'regrade_requests';
     let columns = ['discord_id', 'discord_name', 'created_at', 'updated_at', 'uuid', 'submission', 'grader_feedback', 'expected_score', 'current_score', 'reason'];
@@ -35,6 +44,16 @@ export const newRegradeRequest = async(addRequest: AddRegradeRequestByUserParams
     return uuid;
 }
 
+/**
+ * Returns all regrade requests. is_admin column = true if the requester is an admin, info is only useful for the bot. 
+ * Since only the bot can access the endpoints, no leaks should happen. 
+ * However, if ever this endpoint is exposed, the is_admin column may be redundant.
+ * 
+ * Used in /all_requests
+ * 
+ * @param discord_id 
+ * @returns RegradeRequest[]
+ */
 export const getRegradeRequestsCSV = async(discord_id: string) => {
     let db = new DB();
 
@@ -47,6 +66,11 @@ export const getRegradeRequestsCSV = async(discord_id: string) => {
     return regradeRequest ?? [];
 }
 
+/**
+ * @param onlyActive 
+ * @param excludeId 
+ * @returns RegradeRequest[]
+ */
 export const getRegradeRequests = async(onlyActive = true, excludeId = "") => {
     let db = new DB();
 
@@ -56,9 +80,9 @@ export const getRegradeRequests = async(onlyActive = true, excludeId = "") => {
         query += ' and regraded_at is null and is_regrading = False';
     }
 
+    // excludes certain discord id
     if(excludeId) {
         query += ` and discord_id <> '${excludeId}'`;
-
     }
 
     query += ' order by created_at;';
@@ -66,6 +90,12 @@ export const getRegradeRequests = async(onlyActive = true, excludeId = "") => {
     return regradeRequest ?? [];
 }
 
+/**
+ * Returns the request the grader is currently reviewing.
+ * 
+ * @param discord_id 
+ * @returns RegradeRequest[]
+ */
 export const getCurrentRequestForGrader = async(discord_id: string) => {
     let db = new DB();
 
@@ -82,6 +112,14 @@ export const getCurrentRequestForGrader = async(discord_id: string) => {
     return regradeRequest ?? [];
 }
 
+/**
+ * Returns the regrade requests for a discord user.
+ * Used in /my_requests
+ * 
+ * @param discordId 
+ * @param page 
+ * @returns RegradeRequest[]
+ */
 export const getRegradeRequestsForUser = async(discordId: string, page: number = -1) => {
     let db = new DB();
 
@@ -97,6 +135,12 @@ export const getRegradeRequestsForUser = async(discordId: string, page: number =
     return regradeRequest ?? [];
 }
 
+/**
+ * Gets a specific request by uuid
+ * 
+ * @param uuid 
+ * @returns RegradeRequest[]
+ */
 export const getRegradeRequest = async(uuid: string) => {
     let db = new DB();
 
@@ -109,6 +153,13 @@ export const getRegradeRequest = async(uuid: string) => {
     return regradeRequest ?? [];
 }
 
+/**
+ * Updates a request from the requester.
+ * Currently unused.
+ * 
+ * @param UpdateRegradeRequestByUserParams 
+ * @returns string
+ */
 export const updateRegradeRequestByUser = async(updateRequest: UpdateRegradeRequestByUserParams) => {
     let db = new DB();
 
@@ -149,6 +200,12 @@ export const updateRegradeRequestByUser = async(updateRequest: UpdateRegradeRequ
     return "Updated";
 }
 
+/**
+ * Assigns a grader to a request of another user.
+ * 
+ * @param AssignGraderToRegradeRequestParams 
+ * @returns string | RegradeRequest
+ */
 export const assignGraderToRequest = async(updateRequest: AssignGraderToRegradeRequestParams) => {
     let db = new DB();
 
@@ -185,6 +242,13 @@ export const assignGraderToRequest = async(updateRequest: AssignGraderToRegradeR
     return requests[0];
 }
 
+/**
+ * Unassigns the grader from their current assignment.
+ * Currently unused.
+ * 
+ * @param uuid 
+ * @returns string
+ */
 export const unassignGraderForRequest = async(uuid: string) => {
     let db = new DB();
 
@@ -202,6 +266,12 @@ export const unassignGraderForRequest = async(uuid: string) => {
     return "Updated";
 }
 
+/**
+ * Updates the regraded score and regraded reason for the grader's current assignment.
+ * 
+ * @param UpdateRegradeRequestByGraderParams 
+ * @returns string
+ */
 export const updateRegradeRequestByGrader = async(updateRequest: UpdateRegradeRequestByGraderParams) => {
     let db = new DB();
 
@@ -238,6 +308,14 @@ export const updateRegradeRequestByGrader = async(updateRequest: UpdateRegradeRe
     return "Updated";
 }
 
+/**
+ * Admin Function.
+ * Approve the regrader's regraded score.
+ * Gives one Golden Ticket to the regrader.
+ * 
+ * @param ApproveRegradeRequestByAdminParams 
+ * @returns string
+ */
 export const approveRegradeRequest = async(approveRequest: ApproveRegradeRequestByAdminParams) => {
     let db = new DB();
 
@@ -286,6 +364,13 @@ export const approveRegradeRequest = async(approveRequest: ApproveRegradeRequest
     return "Approved";
 }
 
+/**
+ * Admin Function.
+ * Returns all requests that had been regraded but not approved.
+ * 
+ * @param PendingApprovalsParams 
+ * @returns RegradeRequest[]
+ */
 export const getPendingApprovals = async({ discord_id, page}: PendingApprovalsParams) => {
     let db = new DB();
     let isAdmin = await isCurrentUserAdmin(discord_id);

@@ -2,6 +2,13 @@ import DB from '../DB';
 import { AddAdminParams, RemoveAdminParams } from './types';
 import { getInsertQuery, getUTCDatetime, isCurrentUserAdmin } from '../../utils';
 
+/**
+ * Admin Function.
+ * Adds a new admin.
+ * 
+ * @param AddAdminParams 
+ * @returns string
+ */
 export const addAdmin = async({ discord_id, discord_name, added_by_id, added_by }: AddAdminParams) => {
     let isAdmin = await isCurrentUserAdmin(added_by_id);
     if(!isAdmin) {
@@ -33,6 +40,13 @@ export const addAdmin = async({ discord_id, discord_name, added_by_id, added_by 
     return `Added ${discord_name} as admin`;
 }
 
+/**
+ * Admin Function.
+ * Removes an admin.
+ * 
+ * @param RemoveAdminParams 
+ * @returns string
+ */
 export const removeAdmin = async({ discord_id, discord_name, removed_by_id }: RemoveAdminParams) => {
     let isAdmin = await isCurrentUserAdmin(removed_by_id);
     if(!isAdmin) {
