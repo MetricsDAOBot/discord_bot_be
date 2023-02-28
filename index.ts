@@ -5,7 +5,7 @@ import { Socket, Server } from 'socket.io';
 import cors from 'cors';import _ from 'lodash';
 import path from 'path';
 import dotenv from 'dotenv';
-import { approveRegradeRequest, assignGraderToRequest, getPendingApprovals, getRegradeRequest, getRegradeRequests, getRegradeRequestsCSV, getRegradeRequestsForUser, newRegradeRequest, updateRegradeRequestByGrader, updateRegradeRequestByUser, } from './src/Regrade';
+import { approveRegradeRequest, assignGraderToRequest, getPendingApprovals, getRegradeRequest, getRegradeRequests, getRegradeRequestsCSV, getRegradeRequestsForUser, newRegradeRequest, rejectRegradeRequest, updateRegradeRequestByGrader, updateRegradeRequestByUser, } from './src/Regrade';
 import { addTicket, getUserTickets } from './src/GoldenTicket';
 import { addAdmin, removeAdmin } from './src/Admin';
 import { AddAdminParams } from './src/Admin/types';
@@ -142,6 +142,12 @@ app.post('/pending_approvals', async function(req, res) {
 app.post('/approve_regrade_request', async function(req, res) {
     let { discord_id, discord_name, uuid }: ApproveRegradeRequestByAdminParams = req.body;
     let ret = await approveRegradeRequest({ discord_id, discord_name, uuid });
+    return res.send(ret);
+});
+
+app.post('/reject_regrade_request', async function(req, res) {
+    let { discord_id, discord_name, uuid }: ApproveRegradeRequestByAdminParams = req.body;
+    let ret = await rejectRegradeRequest({ discord_id, discord_name, uuid });
     return res.send(ret);
 });
 

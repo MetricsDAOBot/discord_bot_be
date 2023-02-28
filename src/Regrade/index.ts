@@ -280,6 +280,8 @@ export const updateRegradeRequestByGrader = async(updateRequest: UpdateRegradeRe
 
         regraded_score,
         regraded_reason,
+
+        regraded_by_id,
     } = updateRequest;
 
     let regradeRequests = await getRegradeRequest(uuid);
@@ -289,6 +291,10 @@ export const updateRegradeRequestByGrader = async(updateRequest: UpdateRegradeRe
 
     if(regradeRequests[0].regraded_score) {
         return "Already regraded";
+    }
+
+    if(regradeRequests[0].regraded_by_id !== regraded_by_id) {
+        return "You are not assigned to this request";
     }
 
     let now = getUTCDatetime();
@@ -336,6 +342,10 @@ export const approveRegradeRequest = async(approveRequest: ApproveRegradeRequest
         return "Unable to find request";
     }
 
+    if(!regradeRequests[0].regraded_score) {
+        return "Request not regraded yet";
+    }
+
     if(regradeRequests[0].approved_at) {
         return "Already approved";
     }
@@ -362,6 +372,60 @@ export const approveRegradeRequest = async(approveRequest: ApproveRegradeRequest
     });
 
     return "Approved";
+}
+
+/**
+ * Admin Function.
+ * Reject the regrader's regraded score.
+ * Opens up the submission to be regraded by someone else.
+ * 
+ * @param ApproveRegradeRequestByAdminParams 
+ * @returns string
+ */
+export const rejectRegradeRequest = async(approveRequest: ApproveRegradeRequestByAdminParams) => {
+    let db = new DB();
+
+    let {
+        uuid,
+
+        discord_id,
+        discord_name,
+    } = approveRequest;
+
+    let isAdmin = await isCurrentUserAdmin(discord_id);
+    if(!isAdmin) {
+        return "Unauthorized";
+    }
+
+    let regradeRequests = await getRegradeRequest(uuid);
+    if(regradeRequests.length === 0) {
+        return "Unable to find request";
+    }
+
+    // cant reject if this was already approved
+    if(regradeRequests[0].approved_at) {
+        return "Already approved";
+    }
+
+    let now = getUTCDatetime();
+
+    let query = `update regrade_requests 
+                 set 
+                    regraded_at = null, 
+                    regraded_by = null, 
+                    regraded_by_id = null, 
+                    regraded_reason = null, 
+                    is_regrading = false, 
+                    regraded_score = null,
+                    updated_at = '${now}'
+                 where uuid = '${uuid}'`;
+
+    let isSuccess = await db.executeQuery(query);
+    if(!isSuccess) {
+        return "Error";
+    }
+
+    return "Rejected";
 }
 
 /**
