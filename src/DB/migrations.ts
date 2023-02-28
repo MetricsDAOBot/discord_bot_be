@@ -80,4 +80,16 @@ export default [
             );`,
         rollback_query: `DROP TABLE admins;`
     },
+    {
+        id: 5,
+        query: `
+            ALTER TABLE regrade_requests 
+            ALTER COLUMN current_score TYPE real,
+            ALTER COLUMN expected_score TYPE real,
+            ALTER COLUMN regraded_score TYPE real;`,
+        rollback_query: `ALTER TABLE regrade_requests 
+        ALTER COLUMN current_score TYPE smallint,
+        ALTER COLUMN expected_score TYPE smallint,
+        ALTER COLUMN regraded_score TYPE smallint;`
+    },
 ];
