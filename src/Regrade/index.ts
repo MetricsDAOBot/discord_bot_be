@@ -107,7 +107,7 @@ export const getCurrentRequestForGrader = async(discord_id: string) => {
                         and regraded_score is null
                         and regraded_reason is null`;
 
-    query += ' order by created_at;';
+    query += ' order by created_at desc;';
     let regradeRequest = await db.executeQueryForResults<RegradeRequest>(query);
     return regradeRequest ?? [];
 }
@@ -126,7 +126,7 @@ export const getRegradeRequestsForUser = async(discordId: string, page: number =
     let query = `select * from regrade_requests 
                         where deleted_at is null 
                             and discord_id = '${discordId}'
-                        order by created_at`;
+                        order by created_at desc`;
 
     if(page > -1) {
         query += ` limit 2 offset ${page}`;
