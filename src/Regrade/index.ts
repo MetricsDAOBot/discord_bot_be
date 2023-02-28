@@ -23,8 +23,14 @@ export const newRegradeRequest = async(addRequest: AddRegradeRequestByUserParams
         return "You're out of Golden Tickets";
     }
 
+    //some people use comma as decimals
     expected_score = expected_score!.replace(",", ".");
     current_score = current_score!.replace(",", ".");
+
+    //escape apostrophe
+    discord_name = discord_name.replace(/'/g, "''");
+    grader_feedback = grader_feedback?.replace(/'/g, "''") ?? "";
+    reason = reason?.replace(/'/g, "''") ?? "";
 
     let now = getUTCDatetime();
     let updateGoldenTicketQuery = `update golden_tickets set is_spent = TRUE, spent_at = '${now}', updated_at = '${now}' where id = ${tickets[0].id};`;
@@ -187,8 +193,13 @@ export const updateRegradeRequestByUser = async(updateRequest: UpdateRegradeRequ
         return "Unable to update request";
     }
 
+    //some people use comma as decimals
     expected_score = expected_score!.replace(",", ".");
     current_score = current_score!.replace(",", ".");
+
+    //escape apostrophe
+    grader_feedback = grader_feedback?.replace(/'/g, "''") ?? "";
+    reason = reason?.replace(/'/g, "''") ?? "";
 
     let now = getUTCDatetime();
     let query = `update regrade_requests 
@@ -233,6 +244,9 @@ export const assignGraderToRequest = async(updateRequest: AssignGraderToRegradeR
     if(requests.length === 0) {
         return "No regrade requests found!";
     }
+
+    // escape apostrophe
+    discord_name = discord_name.replace(/'/g, "''");
 
     let now = getUTCDatetime();
     let query = `update regrade_requests 
@@ -305,7 +319,11 @@ export const updateRegradeRequestByGrader = async(updateRequest: UpdateRegradeRe
         return "You are not assigned to this request";
     }
 
+    // some people uses comma as decimal
     regraded_score = regraded_score!.replace(",", ".");
+
+    // escape apostrophe
+    regraded_reason = regraded_reason?.replace(/'/g, "''") ?? "";
 
     let now = getUTCDatetime();
 
@@ -359,6 +377,9 @@ export const approveRegradeRequest = async(approveRequest: ApproveRegradeRequest
     if(regradeRequests[0].approved_at) {
         return "Already approved";
     }
+
+    // escape apostrophe
+    discord_name = discord_name.replace(/'/g, "''");
 
     let now = getUTCDatetime();
 
