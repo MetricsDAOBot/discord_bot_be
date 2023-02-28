@@ -34,8 +34,8 @@ export type AddRegradeRequestByUserParams = {
 
     submission: string | null;
     grader_feedback: string | null;
-    current_score: number | null;
-    expected_score: number | null;
+    current_score: string | null;
+    expected_score: string | null;
     reason: string | null; // reason to get expected score
 }
 
@@ -44,8 +44,8 @@ export type UpdateRegradeRequestByUserParams = {
 
     submission: string | null;
     grader_feedback: string | null;
-    current_score: number | null;
-    expected_score: number | null;
+    current_score: string | null;
+    expected_score: string | null;
     reason: string | null; // reason to get expected score
 }
 
@@ -60,7 +60,7 @@ export type UpdateRegradeRequestByGraderParams = {
     uuid: string;
 
     regraded_by_id: string;
-    regraded_score: number | null;
+    regraded_score: string | null;
     regraded_reason: string | null;
 }
 

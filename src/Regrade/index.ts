@@ -16,10 +16,15 @@ export const newRegradeRequest = async(addRequest: AddRegradeRequestByUserParams
     let db = new DB();
 
     let { discord_id, discord_name, submission, grader_feedback, expected_score, current_score, reason } = addRequest;
+    console.log({ discord_id, discord_name, submission, grader_feedback, expected_score, current_score, reason });
+
     let tickets = await getUserTickets({ discord_id, unspent_only: true });
     if(!tickets || tickets.length === 0) {
         return "You're out of Golden Tickets";
     }
+
+    expected_score = expected_score!.replace(",", ".");
+    current_score = current_score!.replace(",", ".");
 
     let now = getUTCDatetime();
     let updateGoldenTicketQuery = `update golden_tickets set is_spent = TRUE, spent_at = '${now}', updated_at = '${now}' where id = ${tickets[0].id};`;
@@ -182,6 +187,9 @@ export const updateRegradeRequestByUser = async(updateRequest: UpdateRegradeRequ
         return "Unable to update request";
     }
 
+    expected_score = expected_score!.replace(",", ".");
+    current_score = current_score!.replace(",", ".");
+
     let now = getUTCDatetime();
     let query = `update regrade_requests 
                  set submission = '${submission}', 
@@ -296,6 +304,8 @@ export const updateRegradeRequestByGrader = async(updateRequest: UpdateRegradeRe
     if(regradeRequests[0].regraded_by_id !== regraded_by_id) {
         return "You are not assigned to this request";
     }
+
+    regraded_score = regraded_score!.replace(",", ".");
 
     let now = getUTCDatetime();
 
