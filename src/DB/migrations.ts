@@ -92,4 +92,16 @@ export default [
         ALTER COLUMN expected_score TYPE smallint,
         ALTER COLUMN regraded_score TYPE smallint;`
     },
+    {
+        id: 6,
+        query: `
+            ALTER TABLE regrade_requests 
+            ALTER COLUMN current_score TYPE text,
+            ALTER COLUMN expected_score TYPE text,
+            ALTER COLUMN regraded_score TYPE text;`,
+        rollback_query: `ALTER TABLE regrade_requests 
+        ALTER COLUMN current_score TYPE real using current_score::real,
+        ALTER COLUMN expected_score TYPE real using expected_score::real,
+        ALTER COLUMN regraded_score TYPE real using regraded_score::real;`
+    },
 ];

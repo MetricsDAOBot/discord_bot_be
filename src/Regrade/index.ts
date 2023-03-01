@@ -23,11 +23,9 @@ export const newRegradeRequest = async(addRequest: AddRegradeRequestByUserParams
         return "You're out of Golden Tickets";
     }
 
-    //some people use comma as decimals
-    expected_score = expected_score!.replace(",", ".");
-    current_score = current_score!.replace(",", ".");
-
     //escape apostrophe
+    expected_score = expected_score!.replace(/'/g, "''");
+    current_score = current_score!.replace(/'/g, "''");
     discord_name = discord_name.replace(/'/g, "''");
     grader_feedback = grader_feedback?.replace(/'/g, "''") ?? "";
     reason = reason?.replace(/'/g, "''") ?? "";
@@ -194,10 +192,8 @@ export const updateRegradeRequestByUser = async(updateRequest: UpdateRegradeRequ
     }
 
     //some people use comma as decimals
-    expected_score = expected_score!.replace(",", ".");
-    current_score = current_score!.replace(",", ".");
-
-    //escape apostrophe
+    expected_score = expected_score!.replace(/'/g, "''");
+    current_score = current_score!.replace(/'/g, "''");
     grader_feedback = grader_feedback?.replace(/'/g, "''") ?? "";
     reason = reason?.replace(/'/g, "''") ?? "";
 
@@ -318,11 +314,9 @@ export const updateRegradeRequestByGrader = async(updateRequest: UpdateRegradeRe
     if(regradeRequests[0].regraded_by_id !== regraded_by_id) {
         return "You are not assigned to this request";
     }
-
-    // some people uses comma as decimal
-    regraded_score = regraded_score!.replace(",", ".");
-
+    
     // escape apostrophe
+    regraded_score = regraded_score!.replace(/'/g, "''");
     regraded_reason = regraded_reason?.replace(/'/g, "''") ?? "";
 
     let now = getUTCDatetime();

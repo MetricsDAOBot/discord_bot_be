@@ -9,8 +9,8 @@ export type RegradeRequest = {
 
     submission: string | null;
     grader_feedback: string | null;
-    current_score: number | null;
-    expected_score: number | null;
+    current_score: string | null;
+    expected_score: string | null;
     reason: string | null; // reason to get expected score
 
     regraded_by_id: string | null;
