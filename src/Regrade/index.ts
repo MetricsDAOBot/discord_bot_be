@@ -76,6 +76,24 @@ export const getRegradeRequestsCSV = async(discord_id: string) => {
 }
 
 /**
+ * Returns only open regrade requests.
+ * 
+ * Used in /all_requests
+ * 
+ * @param discord_id 
+ * @returns RegradeRequest[]
+ */
+export const getOpenRegradeRequests = async() => {
+    let db = new DB();
+
+    let query = `select * from regrade_requests where deleted_at is null and approved_at is null`;
+
+    query += ' order by created_at;';
+    let regradeRequest = await db.executeQueryForResults<RegradeRequest>(query);
+    return regradeRequest ?? [];
+}
+
+/**
  * @param onlyActive 
  * @param excludeId 
  * @returns RegradeRequest[]
