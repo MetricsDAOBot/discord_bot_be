@@ -5,12 +5,12 @@ import { Socket, Server } from 'socket.io';
 import cors from 'cors';import _ from 'lodash';
 import path from 'path';
 import dotenv from 'dotenv';
-import { approveRegradeRequest, assignGraderToRequest, getOpenRegradeRequests, getPendingApprovals, getRegradeRequest, getRegradeRequests, getRegradeRequestsCSV, getRegradeRequestsForUser, newRegradeRequest, rejectRegradeRequest, updateRegradeRequestByGrader, updateRegradeRequestByUser, } from './src/Regrade';
+import { approveRegradeRequest, assignGraderToRequest, assignThreadIdToRequest, getOpenRegradeRequests, getPendingApprovals, getRegradeRequest, getRegradeRequests, getRegradeRequestsCSV, getRegradeRequestsForUser, getRegradeRequestsWithoutThread, newRegradeRequest, rejectRegradeRequest, updateRegradeRequestByGrader, updateRegradeRequestByUser, } from './src/Regrade';
 import { addTicket, getUserTickets } from './src/GoldenTicket';
 import { addAdmin, removeAdmin } from './src/Admin';
 import { AddAdminParams } from './src/Admin/types';
 import { AddTicketParams } from './src/GoldenTicket/types';
-import { AddRegradeRequestByUserParams, ApproveRegradeRequestByAdminParams, AssignGraderToRegradeRequestParams, PendingApprovalsParams, UpdateRegradeRequestByGraderParams, UpdateRegradeRequestByUserParams } from './src/Regrade/types';
+import { ApproveRegradeRequestByAdminParams, AssignGraderToRegradeRequestParams, AssignThreadIdParams, PendingApprovalsParams, UpdateRegradeRequestByGraderParams, UpdateRegradeRequestByUserParams } from './src/Regrade/types';
 dotenv.config({ path: path.join(__dirname, '.env')});
 
 process.on('uncaughtException', function (err) {
@@ -61,6 +61,11 @@ app.get('/open_regrade_requests', async function(req, res) {
     return res.send(requests);
 });
 
+app.get('/regrade_request_without_threads', async function(req, res) {
+    let requests = await getRegradeRequestsWithoutThread();
+    return res.send(requests);
+});
+
 app.get('/regrade_request/:uuid', async function(req, res) {
     let uuid: string = req.params["uuid"];
     let requests = await getRegradeRequest(uuid);
@@ -90,9 +95,17 @@ app.get('/regrade_requests/:discord_id/:page', async function(req, res) {
 }); */
 
 app.post('/regrade_request', async function(req, res) {
-    let { discord_id, discord_name, submission, grader_feedback, expected_score, current_score, reason }: AddRegradeRequestByUserParams = req.body;
-    let uuid = await newRegradeRequest({ discord_id, discord_name, submission, grader_feedback, expected_score, current_score, reason });
+    let uuid = await newRegradeRequest(req.body);
     return res.send(uuid);
+});
+
+/**
+ * Assigns thread id to the current regrade request
+ */
+app.post('/assign_regrade_request_thread_id', async function(req, res) {
+    let { uuid, thread_id }: AssignThreadIdParams = req.body;
+    let request = await assignThreadIdToRequest({ uuid, thread_id });
+    return res.send(request);
 });
 
 app.patch('/regrade_request', async function(req, res) {

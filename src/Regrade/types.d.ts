@@ -7,6 +7,9 @@ export type RegradeRequest = {
     is_regrading: bool;
     uuid: string;
 
+    blockchain: string | null;
+    question: string | null;
+    thread_id: string | null;
     submission: string | null;
     grader_feedback: string | null;
     current_score: string | null;
@@ -37,6 +40,12 @@ export type AddRegradeRequestByUserParams = {
     current_score: string | null;
     expected_score: string | null;
     reason: string | null; // reason to get expected score
+    blockchain: string | null;
+    question: string | null;
+}
+export type AssignThreadIdParams = {
+    uuid: string;
+    thread_id: string;
 }
 
 export type UpdateRegradeRequestByUserParams = {

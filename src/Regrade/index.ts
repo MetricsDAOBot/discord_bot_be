@@ -1,7 +1,7 @@
 import DB from '../DB';
 import { randomUUID } from 'crypto';
 import { isValidUUID, getInsertQuery, getUTCDatetime, isCurrentUserAdmin, } from '../../utils';
-import { AddRegradeRequestByUserParams, ApproveRegradeRequestByAdminParams, AssignGraderToRegradeRequestParams, PendingApprovalsParams, RegradeRequest, RegradeRequestCSV, UpdateRegradeRequestByGraderParams, UpdateRegradeRequestByUserParams } from './types';
+import { AddRegradeRequestByUserParams, ApproveRegradeRequestByAdminParams, AssignGraderToRegradeRequestParams, AssignThreadIdParams, PendingApprovalsParams, RegradeRequest, RegradeRequestCSV, UpdateRegradeRequestByGraderParams, UpdateRegradeRequestByUserParams } from './types';
 import { addTicket, getUserTickets } from '../GoldenTicket';
 import moment from 'moment';
 
@@ -15,8 +15,8 @@ import moment from 'moment';
 export const newRegradeRequest = async(addRequest: AddRegradeRequestByUserParams) => {
     let db = new DB();
 
-    let { discord_id, discord_name, submission, grader_feedback, expected_score, current_score, reason } = addRequest;
-    console.log({ discord_id, discord_name, submission, grader_feedback, expected_score, current_score, reason });
+    let { discord_id, discord_name, submission, grader_feedback, expected_score, current_score, reason, blockchain, question } = addRequest;
+    console.log({ discord_id, discord_name, submission, grader_feedback, expected_score, current_score, reason, blockchain, question });
 
     let tickets = await getUserTickets({ discord_id, unspent_only: true });
     if(!tickets || tickets.length === 0) {
@@ -24,6 +24,8 @@ export const newRegradeRequest = async(addRequest: AddRegradeRequestByUserParams
     }
 
     //escape apostrophe
+    blockchain = blockchain!.replace(/'/g, "''");
+    question = question!.replace(/'/g, "''");
     expected_score = expected_score!.replace(/'/g, "''");
     current_score = current_score!.replace(/'/g, "''");
     discord_name = discord_name.replace(/'/g, "''");
@@ -41,10 +43,10 @@ export const newRegradeRequest = async(addRequest: AddRegradeRequestByUserParams
     // however this is unused and the idea is scrapped, uuid is kept so that it can be used if needed in the future
     let uuid = randomUUID();
     let table = 'regrade_requests';
-    let columns = ['discord_id', 'discord_name', 'created_at', 'updated_at', 'uuid', 'submission', 'grader_feedback', 'expected_score', 'current_score', 'reason'];
+    let columns = ['discord_id', 'discord_name', 'created_at', 'updated_at', 'uuid', 'submission', 'grader_feedback', 'expected_score', 'current_score', 'reason', 'blockchain', 'question'];
     let values: any[][] = [];
 
-    values.push([discord_id, discord_name, now, now, uuid, submission, grader_feedback, expected_score, current_score, reason]);
+    values.push([discord_id, discord_name, now, now, uuid, submission, grader_feedback, expected_score, current_score, reason, blockchain, question]);
 
     let query = getInsertQuery(columns, values, table);
     query = `${query.replace(';', '')} returning id;`;
@@ -87,6 +89,16 @@ export const getOpenRegradeRequests = async() => {
     let db = new DB();
 
     let query = `select * from regrade_requests where deleted_at is null and approved_at is null`;
+
+    query += ' order by created_at;';
+    let regradeRequest = await db.executeQueryForResults<RegradeRequest>(query);
+    return regradeRequest ?? [];
+}
+
+export const getRegradeRequestsWithoutThread = async() => {
+    let db = new DB();
+
+    let query = `select * from regrade_requests where deleted_at is null and thread_id is null`;
 
     query += ' order by created_at;';
     let regradeRequest = await db.executeQueryForResults<RegradeRequest>(query);
@@ -231,6 +243,39 @@ export const updateRegradeRequestByUser = async(updateRequest: UpdateRegradeRequ
     }
 
     return "Updated";
+}
+
+/**
+ * Assigns a grader to a request of another user.
+ * 
+ * @param AssignGraderToRegradeRequestParams 
+ * @returns string | RegradeRequest
+ */
+export const assignThreadIdToRequest = async(updateRequest: AssignThreadIdParams) => {
+    let db = new DB();
+
+    let {
+        uuid,
+        thread_id
+    } = updateRequest;
+
+    let requests = await getRegradeRequest(uuid);
+    if(requests.length === 0) {
+        return "No regrade requests found!";
+    }
+
+    let now = getUTCDatetime();
+    let query = `update regrade_requests 
+                 set thread_id = '${thread_id}',
+                     updated_at = '${now}'
+                 where uuid = '${requests[0].uuid}'`;
+
+    let isSuccess = await db.executeQuery(query);
+    if(!isSuccess) {
+        return "Error";
+    }
+
+    return requests[0];
 }
 
 /**

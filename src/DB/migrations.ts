@@ -104,4 +104,28 @@ export default [
         ALTER COLUMN expected_score TYPE real using expected_score::real,
         ALTER COLUMN regraded_score TYPE real using regraded_score::real;`
     },
+    {
+        id: 7,
+        query: `
+            ALTER TABLE regrade_requests 
+            ADD thread_id text;`,
+        rollback_query: `ALTER TABLE regrade_requests 
+        DROP COLUMN thread_id;`
+    },
+    {
+        id: 8,
+        query: `
+            ALTER TABLE regrade_requests 
+            ADD blockchain text;`,
+        rollback_query: `ALTER TABLE regrade_requests 
+        DROP COLUMN blockchain;`
+    },
+    {
+        id: 9,
+        query: `
+            ALTER TABLE regrade_requests 
+            ADD question text;`,
+        rollback_query: `ALTER TABLE regrade_requests 
+        DROP COLUMN question;`
+    },
 ];
