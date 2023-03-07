@@ -124,8 +124,16 @@ export default [
         id: 9,
         query: `
             ALTER TABLE regrade_requests 
-            ADD question text;`,
+            ADD bounty_name text;`,
         rollback_query: `ALTER TABLE regrade_requests 
-        DROP COLUMN question;`
+        DROP COLUMN bounty_name;`
+    },
+    {
+        id: 10,
+        query: `
+            ALTER TABLE regrade_requests 
+            ADD first_message_id text;`,
+        rollback_query: `ALTER TABLE regrade_requests 
+        DROP COLUMN first_message_id;`
     },
 ];

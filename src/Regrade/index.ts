@@ -15,8 +15,8 @@ import moment from 'moment';
 export const newRegradeRequest = async(addRequest: AddRegradeRequestByUserParams) => {
     let db = new DB();
 
-    let { discord_id, discord_name, submission, grader_feedback, expected_score, current_score, reason, blockchain, question } = addRequest;
-    console.log({ discord_id, discord_name, submission, grader_feedback, expected_score, current_score, reason, blockchain, question });
+    let { discord_id, discord_name, submission, grader_feedback, expected_score, current_score, reason, blockchain, bounty_name } = addRequest;
+    console.log({ discord_id, discord_name, submission, grader_feedback, expected_score, current_score, reason, blockchain, bounty_name });
 
     let tickets = await getUserTickets({ discord_id, unspent_only: true });
     if(!tickets || tickets.length === 0) {
@@ -25,7 +25,7 @@ export const newRegradeRequest = async(addRequest: AddRegradeRequestByUserParams
 
     //escape apostrophe
     blockchain = blockchain!.replace(/'/g, "''");
-    question = question!.replace(/'/g, "''");
+    bounty_name = bounty_name!.replace(/'/g, "''");
     expected_score = expected_score!.replace(/'/g, "''");
     current_score = current_score!.replace(/'/g, "''");
     discord_name = discord_name.replace(/'/g, "''");
@@ -43,10 +43,10 @@ export const newRegradeRequest = async(addRequest: AddRegradeRequestByUserParams
     // however this is unused and the idea is scrapped, uuid is kept so that it can be used if needed in the future
     let uuid = randomUUID();
     let table = 'regrade_requests';
-    let columns = ['discord_id', 'discord_name', 'created_at', 'updated_at', 'uuid', 'submission', 'grader_feedback', 'expected_score', 'current_score', 'reason', 'blockchain', 'question'];
+    let columns = ['discord_id', 'discord_name', 'created_at', 'updated_at', 'uuid', 'submission', 'grader_feedback', 'expected_score', 'current_score', 'reason', 'blockchain', 'bounty_name'];
     let values: any[][] = [];
 
-    values.push([discord_id, discord_name, now, now, uuid, submission, grader_feedback, expected_score, current_score, reason, blockchain, question]);
+    values.push([discord_id, discord_name, now, now, uuid, submission, grader_feedback, expected_score, current_score, reason, blockchain, bounty_name]);
 
     let query = getInsertQuery(columns, values, table);
     query = `${query.replace(';', '')} returning id;`;
@@ -256,7 +256,8 @@ export const assignThreadIdToRequest = async(updateRequest: AssignThreadIdParams
 
     let {
         uuid,
-        thread_id
+        thread_id,
+        first_message_id,
     } = updateRequest;
 
     let requests = await getRegradeRequest(uuid);
@@ -267,6 +268,7 @@ export const assignThreadIdToRequest = async(updateRequest: AssignThreadIdParams
     let now = getUTCDatetime();
     let query = `update regrade_requests 
                  set thread_id = '${thread_id}',
+                     first_message_id = '${first_message_id}',
                      updated_at = '${now}'
                  where uuid = '${requests[0].uuid}'`;
 

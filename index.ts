@@ -100,11 +100,10 @@ app.post('/regrade_request', async function(req, res) {
 });
 
 /**
- * Assigns thread id to the current regrade request
+ * Assigns thread id and first_message_id to the current regrade request
  */
 app.post('/assign_regrade_request_thread_id', async function(req, res) {
-    let { uuid, thread_id }: AssignThreadIdParams = req.body;
-    let request = await assignThreadIdToRequest({ uuid, thread_id });
+    let request = await assignThreadIdToRequest(req.body);
     return res.send(request);
 });
 
