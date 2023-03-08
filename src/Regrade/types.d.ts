@@ -27,6 +27,11 @@ export type RegradeRequest = {
     approved_by: string | null;
     approved_by_id: string | null;
 
+    is_payment_expected: boolean | null;
+    is_payment_assigned: boolean | null;
+    paid_at: string | null;
+    payment_tx_hash: string | null;
+
     deleted_at: string | null;
 }
 
@@ -77,7 +82,8 @@ export type UpdateRegradeRequestByGraderParams = {
 }
 
 export type ApproveRegradeRequestByAdminParams = {
-    uuid: string;
+    uuid?: string;
+    thread_id?: string;
 
     discord_id: string;
     discord_name: string;
@@ -86,4 +92,15 @@ export type ApproveRegradeRequestByAdminParams = {
 export type PendingApprovalsParams = {
     discord_id: string;
     page: string;
+}
+
+export type MarkAsNoPaymentParams = {
+    discord_id: string;
+    thread_id: string;
+}
+
+export type MarkAsPaidParams = {
+    discord_id: string;
+    thread_id: string;
+    tx_hash?: string;
 }

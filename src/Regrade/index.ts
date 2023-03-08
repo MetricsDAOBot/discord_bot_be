@@ -1,7 +1,7 @@
 import DB from '../DB';
 import { randomUUID } from 'crypto';
 import { isValidUUID, getInsertQuery, getUTCDatetime, isCurrentUserAdmin, } from '../../utils';
-import { AddRegradeRequestByUserParams, ApproveRegradeRequestByAdminParams, AssignGraderToRegradeRequestParams, AssignThreadIdParams, PendingApprovalsParams, RegradeRequest, RegradeRequestCSV, UpdateRegradeRequestByGraderParams, UpdateRegradeRequestByUserParams } from './types';
+import { AddRegradeRequestByUserParams, ApproveRegradeRequestByAdminParams, AssignGraderToRegradeRequestParams, AssignThreadIdParams, MarkAsNoPaymentParams, MarkAsPaidParams, PendingApprovalsParams, RegradeRequest, RegradeRequestCSV, UpdateRegradeRequestByGraderParams, UpdateRegradeRequestByUserParams } from './types';
 import { addTicket, getUserTickets } from '../GoldenTicket';
 import moment from 'moment';
 
@@ -192,6 +192,21 @@ export const getRegradeRequest = async(uuid: string) => {
     return regradeRequest ?? [];
 }
 
+
+/**
+ * Gets a specific request by thread_id
+ * 
+ * @param uuid 
+ * @returns RegradeRequest[]
+ */
+export const getRegradeRequestByThreadID = async(threadId: string) => {
+    let db = new DB();
+
+    let query = `select * from regrade_requests where thread_id = '${threadId}'`;
+    let regradeRequest = await db.executeQueryForResults<RegradeRequest>(query);
+    return regradeRequest ?? [];
+}
+
 /**
  * Updates a request from the requester.
  * Currently unused.
@@ -335,10 +350,13 @@ export const assignGraderToRequest = async(updateRequest: AssignGraderToRegradeR
 export const unassignGraderForRequest = async(uuid: string) => {
     let db = new DB();
 
+    let now = getUTCDatetime();
+
     let query = `update regrade_requests 
                  set regraded_by = null, 
                      regraded_by_id = null,
-                     is_regrading = False
+                     is_regrading = False,
+                     updated_at = '${now}'
                  where uuid = '${uuid}'`;
 
     let isSuccess = await db.executeQuery(query);
@@ -390,7 +408,8 @@ export const updateRegradeRequestByGrader = async(updateRequest: UpdateRegradeRe
                  set regraded_score = '${regraded_score}', 
                      regraded_reason = '${regraded_reason}',
                      regraded_at = '${now}',
-                     is_regrading = false
+                     is_regrading = false,
+                     updated_at = '${now}'
                  where uuid = '${uuid}'`;
 
     let isSuccess = await db.executeQuery(query);
@@ -414,6 +433,7 @@ export const approveRegradeRequest = async(approveRequest: ApproveRegradeRequest
 
     let {
         uuid,
+        thread_id,
 
         discord_id,
         discord_name,
@@ -424,7 +444,11 @@ export const approveRegradeRequest = async(approveRequest: ApproveRegradeRequest
         return "Unauthorized";
     }
 
-    let regradeRequests = await getRegradeRequest(uuid);
+    let regradeRequests: RegradeRequest[] = [];
+
+    if(uuid) regradeRequests = await getRegradeRequest(uuid);
+    if(thread_id) regradeRequests = await getRegradeRequestByThreadID(thread_id);
+
     if(regradeRequests.length === 0) {
         return "Unable to find request";
     }
@@ -439,14 +463,18 @@ export const approveRegradeRequest = async(approveRequest: ApproveRegradeRequest
 
     // escape apostrophe
     discord_name = discord_name.replace(/'/g, "''");
+    let request = regradeRequests[0];
+    let isPaymentExpected = (request.regraded_score ?? 0) > (request.current_score ?? 0 );
 
     let now = getUTCDatetime();
 
     let query = `update regrade_requests 
                  set approved_by = '${discord_name}', 
                      approved_by_id = '${discord_id}',
-                     approved_at = '${now}'
-                 where uuid = '${uuid}'`;
+                     approved_at = '${now}',
+                     updated_at = '${now}'
+                     ${isPaymentExpected? ', is_payment_expected = true' : ''}
+                 where uuid = '${regradeRequests[0].uuid}'`;
 
     let isSuccess = await db.executeQuery(query);
     if(!isSuccess) {
@@ -477,6 +505,7 @@ export const rejectRegradeRequest = async(approveRequest: ApproveRegradeRequestB
 
     let {
         uuid,
+        thread_id,
 
         discord_id,
         discord_name,
@@ -487,9 +516,17 @@ export const rejectRegradeRequest = async(approveRequest: ApproveRegradeRequestB
         return "Unauthorized";
     }
 
-    let regradeRequests = await getRegradeRequest(uuid);
+    let regradeRequests: RegradeRequest[] = [];
+
+    if(uuid) regradeRequests = await getRegradeRequest(uuid);
+    if(thread_id) regradeRequests = await getRegradeRequestByThreadID(thread_id);
+
     if(regradeRequests.length === 0) {
         return "Unable to find request";
+    }
+
+    if(!regradeRequests[0].regraded_score) {
+        return "Request not regraded yet";
     }
 
     // cant reject if this was already approved
@@ -508,7 +545,7 @@ export const rejectRegradeRequest = async(approveRequest: ApproveRegradeRequestB
                     is_regrading = false, 
                     regraded_score = null,
                     updated_at = '${now}'
-                 where uuid = '${uuid}'`;
+                 where uuid = '${regradeRequests[0].uuid}'`;
 
     let isSuccess = await db.executeQuery(query);
     if(!isSuccess) {
@@ -542,4 +579,150 @@ export const getPendingApprovals = async({ discord_id, page}: PendingApprovalsPa
     query += ` order by created_at limit 2 offset ${page};`;
     let regradeRequest = await db.executeQueryForResults<RegradeRequest>(query);
     return regradeRequest ?? [];
+}
+
+/**
+ * Admin Function.
+ * Marks regrade request as no payment needed.
+ * 
+ * @param MarkAsNoPaymentParams 
+ * @returns RegradeRequest[]
+ */
+export const markRegradeRequestAsNoPayment = async({ discord_id, thread_id }: MarkAsNoPaymentParams) => {
+    let db = new DB();
+
+    let isAdmin = await isCurrentUserAdmin(discord_id);
+    if(!isAdmin) {
+        return "Unauthorized";
+    }
+
+    let regradeRequests = await getRegradeRequestByThreadID(thread_id);
+
+    if(regradeRequests.length === 0) {
+        return "Unable to find request";
+    }
+
+    if(!regradeRequests[0].regraded_score) {
+        return "Request not regraded yet";
+    }
+
+    // cant reject if this was already approved
+    if(!regradeRequests[0].approved_at) {
+        return "Request not approved yet";
+    }
+
+    let now = getUTCDatetime();
+
+    let query = `update regrade_requests 
+                 set 
+                    is_payment_expected = false,
+                    is_payment_assigned = false,
+                    updated_at = '${now}'
+                 where uuid = '${regradeRequests[0].uuid}'`;
+
+    let isSuccess = await db.executeQuery(query);
+    if(!isSuccess) {
+        return "Error";
+    }
+
+    regradeRequests = await getRegradeRequestByThreadID(thread_id);
+    return regradeRequests[0];
+}
+
+/**
+ * Admin Function.
+ * Marks regrade request as no payment needed.
+ * 
+ * @param MarkAsNoPaymentParams 
+ * @returns RegradeRequest[]
+ */
+export const markRegradeRequestAsPaymentAssigned = async({ discord_id, thread_id }: MarkAsPaidParams) => {
+    let db = new DB();
+
+    let isAdmin = await isCurrentUserAdmin(discord_id);
+    if(!isAdmin) {
+        return "Unauthorized";
+    }
+
+    let regradeRequests = await getRegradeRequestByThreadID(thread_id);
+
+    if(regradeRequests.length === 0) {
+        return "Unable to find request";
+    }
+
+    if(!regradeRequests[0].regraded_score) {
+        return "Request not regraded yet";
+    }
+
+    // cant reject if this was already approved
+    if(!regradeRequests[0].approved_at) {
+        return "Request not approved yet";
+    }
+
+    let now = getUTCDatetime();
+
+    let query = `update regrade_requests 
+                 set 
+                    is_payment_expected = true,
+                    is_payment_assigned = true,
+                    updated_at = '${now}'
+                 where uuid = '${regradeRequests[0].uuid}'`;
+
+    let isSuccess = await db.executeQuery(query);
+    if(!isSuccess) {
+        return "Error";
+    }
+
+    regradeRequests = await getRegradeRequestByThreadID(thread_id);
+    return regradeRequests[0];
+}
+
+/**
+ * Admin Function.
+ * Marks regrade request as no payment needed.
+ * 
+ * @param MarkAsNoPaymentParams 
+ * @returns RegradeRequest[]
+ */
+export const markRegradeRequestAsPaid = async({ discord_id, thread_id, tx_hash }: MarkAsPaidParams) => {
+    let db = new DB();
+
+    let isAdmin = await isCurrentUserAdmin(discord_id);
+    if(!isAdmin) {
+        return "Unauthorized";
+    }
+
+    let regradeRequests = await getRegradeRequestByThreadID(thread_id);
+
+    if(regradeRequests.length === 0) {
+        return "Unable to find request";
+    }
+
+    if(!regradeRequests[0].regraded_score) {
+        return "Request not regraded yet";
+    }
+
+    // cant reject if this was already approved
+    if(!regradeRequests[0].approved_at) {
+        return "Request not approved yet";
+    }
+
+    let now = getUTCDatetime();
+
+    let query = `update regrade_requests 
+                 set 
+                    is_payment_expected = true,
+                    is_payment_assigned = true,
+                    paid_at = '${now}',
+                    updated_at = '${now}'
+                    ${tx_hash? `, payment_tx_hash = '${tx_hash}'` : ''}
+                 where uuid = '${regradeRequests[0].uuid}'`;
+
+    let isSuccess = await db.executeQuery(query);
+    if(!isSuccess) {
+        return "Error";
+    }
+
+    regradeRequests = await getRegradeRequestByThreadID(thread_id);
+    return regradeRequests[0];
 }

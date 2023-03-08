@@ -136,4 +136,18 @@ export default [
         rollback_query: `ALTER TABLE regrade_requests 
         DROP COLUMN first_message_id;`
     },
+    {
+        id: 11,
+        query: `
+            ALTER TABLE regrade_requests 
+            ADD is_payment_assigned boolean,
+            ADD is_payment_expected boolean,
+            ADD paid_at timestamp,
+            ADD payment_tx_hash text;`,
+        rollback_query: `ALTER TABLE regrade_requests 
+        DROP COLUMN is_payment_assigned,
+        DROP COLUMN is_payment_expected,
+        DROP COLUMN paid_at,
+        DROP COLUMN payment_tx_hash;`
+    },
 ];
