@@ -48,8 +48,7 @@ export const newRegradeRequest = async(addRequest: AddRegradeRequestByUserParams
 
     values.push([discord_id, discord_name, now, now, uuid, submission, grader_feedback, expected_score, current_score, reason, blockchain, bounty_name]);
 
-    let query = getInsertQuery(columns, values, table);
-    query = `${query.replace(';', '')} returning id;`;
+    let query = getInsertQuery(columns, values, table, true);
 
     await db.executeQueryForSingleResult(query);
     return uuid;
