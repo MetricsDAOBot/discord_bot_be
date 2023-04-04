@@ -433,6 +433,7 @@ export const approveRegradeRequest = async(approveRequest: ApproveRegradeRequest
     let {
         uuid,
         thread_id,
+        has_payment,
 
         discord_id,
         discord_name,
@@ -463,7 +464,6 @@ export const approveRegradeRequest = async(approveRequest: ApproveRegradeRequest
     // escape apostrophe
     discord_name = discord_name.replace(/'/g, "''");
     let request = regradeRequests[0];
-    let isPaymentExpected = (request.regraded_score ?? 0) > (request.current_score ?? 0 );
 
     let now = getUTCDatetime();
 
@@ -472,7 +472,7 @@ export const approveRegradeRequest = async(approveRequest: ApproveRegradeRequest
                      approved_by_id = '${discord_id}',
                      approved_at = '${now}',
                      updated_at = '${now}'
-                     ${isPaymentExpected? ', is_payment_expected = true' : ''}
+                     ${has_payment? ', is_payment_expected = true' : ''}
                  where uuid = '${regradeRequests[0].uuid}'`;
 
     let isSuccess = await db.executeQuery(query);

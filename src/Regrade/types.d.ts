@@ -84,6 +84,7 @@ export type UpdateRegradeRequestByGraderParams = {
 export type ApproveRegradeRequestByAdminParams = {
     uuid?: string;
     thread_id?: string;
+    has_payment: boolean;
 
     discord_id: string;
     discord_name: string;
