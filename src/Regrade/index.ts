@@ -1,7 +1,7 @@
 import DB from '../DB';
 import { randomUUID } from 'crypto';
 import { isValidUUID, getInsertQuery, getUTCDatetime, isCurrentUserAdmin, } from '../../utils';
-import { AddRegradeRequestByUserParams, ApproveRegradeRequestByAdminParams, AssignGraderToRegradeRequestParams, AssignThreadIdParams, MarkAsNoPaymentParams, MarkAsPaidParams, PendingApprovalsParams, RegradeRequest, RegradeRequestCSV, UpdateRegradeRequestByGraderParams, UpdateRegradeRequestByUserParams } from './types';
+import { AddRegradeRequestByUserParams, ApproveRegradeRequestByAdminParams, AssignGraderToRegradeRequestParams, AssignThreadIdParams, MarkAsNoPaymentParams, MarkAsPaidParams, PendingApprovalsParams, RegradeRequest, RegradeRequestCSV, RemoveGraderParams, UpdateRegradeRequestByGraderParams, UpdateRegradeRequestByUserParams } from './types';
 import { addTicket, getUserTickets } from '../GoldenTicket';
 import moment from 'moment';
 
@@ -336,7 +336,8 @@ export const assignGraderToRequest = async(updateRequest: AssignGraderToRegradeR
         return "Error";
     }
 
-    return requests[0];
+    let regradeRequests = await getRegradeRequest(requests[0].uuid);
+    return regradeRequests[0];
 }
 
 /**
@@ -346,8 +347,23 @@ export const assignGraderToRequest = async(updateRequest: AssignGraderToRegradeR
  * @param uuid 
  * @returns string
  */
-export const unassignGraderForRequest = async(uuid: string) => {
+export const unassignGraderForRequest = async({ discord_id, thread_id }: RemoveGraderParams) => {
     let db = new DB();
+
+    let isAdmin = await isCurrentUserAdmin(discord_id);
+    if(!isAdmin) {
+        return "Unauthorized";
+    }
+
+    let regradeRequests = await getRegradeRequestByThreadID(thread_id);
+
+    if(regradeRequests.length === 0) {
+        return "Unable to find request";
+    }
+
+    if(!regradeRequests[0].regraded_by) {
+        return "Grader not assigned";
+    }
 
     let now = getUTCDatetime();
 
@@ -356,14 +372,15 @@ export const unassignGraderForRequest = async(uuid: string) => {
                      regraded_by_id = null,
                      is_regrading = False,
                      updated_at = '${now}'
-                 where uuid = '${uuid}'`;
+                 where uuid = '${regradeRequests[0].uuid}'`;
 
     let isSuccess = await db.executeQuery(query);
     if(!isSuccess) {
         return "Error";
     }
 
-    return "Updated";
+    regradeRequests = await getRegradeRequestByThreadID(thread_id);
+    return regradeRequests[0];
 }
 
 /**

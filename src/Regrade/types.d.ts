@@ -105,3 +105,8 @@ export type MarkAsPaidParams = {
     thread_id: string;
     tx_hash?: string;
 }
+
+export type RemoveGraderParams = {
+    discord_id: string;
+    thread_id: string;
+}

@@ -5,7 +5,7 @@ import { Socket, Server } from 'socket.io';
 import cors from 'cors';import _ from 'lodash';
 import path from 'path';
 import dotenv from 'dotenv';
-import { approveRegradeRequest, assignGraderToRequest, assignThreadIdToRequest, getOpenRegradeRequests, getPendingApprovals, getRegradeRequest, getRegradeRequestByThreadID, getRegradeRequests, getRegradeRequestsCSV, getRegradeRequestsForUser, getRegradeRequestsWithoutThread, markRegradeRequestAsNoPayment, markRegradeRequestAsPaid, markRegradeRequestAsPaymentAssigned, newRegradeRequest, rejectRegradeRequest, updateRegradeRequestByGrader, updateRegradeRequestByUser, } from './src/Regrade';
+import { approveRegradeRequest, assignGraderToRequest, assignThreadIdToRequest, getOpenRegradeRequests, getPendingApprovals, getRegradeRequest, getRegradeRequestByThreadID, getRegradeRequests, getRegradeRequestsCSV, getRegradeRequestsForUser, getRegradeRequestsWithoutThread, markRegradeRequestAsNoPayment, markRegradeRequestAsPaid, markRegradeRequestAsPaymentAssigned, newRegradeRequest, rejectRegradeRequest, unassignGraderForRequest, updateRegradeRequestByGrader, updateRegradeRequestByUser, } from './src/Regrade';
 import { addTicket, getUserTickets } from './src/GoldenTicket';
 import { addAdmin, removeAdmin } from './src/Admin';
 import { AddAdminParams } from './src/Admin/types';
@@ -181,6 +181,11 @@ app.post('/mark_request_as_payment_assigned', async function(req, res) {
 
 app.post('/mark_request_as_paid', async function(req, res) {
     let ret = await markRegradeRequestAsPaid(req.body);
+    return res.send(ret);
+});
+
+app.post('/remove_grader_by_thread_id', async function(req, res) {
+    let ret = await unassignGraderForRequest(req.body);
     return res.send(ret);
 });
 
